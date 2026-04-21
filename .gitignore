@@ -1,0 +1,51 @@
+# ==============================
+# DJANGO / PYTHON
+# ==============================
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+
+# Virtual environment (CRITICAL!!)
+venv/
+.env/
+env/
+
+# Environment variables
+.env
+*.env
+
+# Database
+db.sqlite3
+
+# Media & static generated files
+/media/
+staticfiles/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# ==============================
+# TORCH / AI (VERY IMPORTANT)
+# ==============================
+*.pt
+*.pth
+*.onnx
+*.bin
+
+# Temporary
+*.tmp
+*.bak
