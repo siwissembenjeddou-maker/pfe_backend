@@ -14,11 +14,11 @@ from apps.assessments.models import Assessment
 from apps.notifications.models import Notification
 from apps.schedules.models import ActivitySchedule
 
-print("🌱  Seeding AutiSense database …")
+print("Seeding AutiSense database ...")
 
 def create_user(email, name, role, password='demo1234'):
     if User.objects.filter(email=email).exists():
-        print(f"   ⚠ User {email} already exists, skipping.")
+        print(f"   [WARNING] User {email} already exists, skipping.")
         return User.objects.get(email=email)
     parts = name.split(' ', 1)
     u = User(
@@ -29,7 +29,7 @@ def create_user(email, name, role, password='demo1234'):
     )
     u.set_password(password)
     u.save()
-    print(f"   ✅ Created {role}: {name}  ({email})")
+    print(f"   [OK] Created {role}: {name}  ({email})")
     return u
 
 admin  = create_user('demo.admin@autisense.app',        'Admin AutiSense',    'admin')
@@ -42,14 +42,14 @@ edu2   = create_user('educator2@autisense.app',         'Mr. Youssef Hakim',  'e
 
 def create_child(name, dob_str, gender, parent, notes=''):
     if Child.objects.filter(name=name, parent=parent).exists():
-        print(f"   ⚠ Child {name} already exists, skipping.")
+        print(f"   [WARNING] Child {name} already exists, skipping.")
         return Child.objects.get(name=name, parent=parent)
     c = Child.objects.create(
         name=name,
         date_of_birth=date.fromisoformat(dob_str),
         gender=gender, parent=parent, notes=notes,
     )
-    print(f"   ✅ Created child: {name}")
+    print(f"   [OK] Created child: {name}")
     return c
 
 child1 = create_child('Liam Johnson',   '2019-03-15', 'male',   p1, 'Loves trains and drawing.')
@@ -113,7 +113,7 @@ SAMPLE_ASSESSMENTS = [
 for a_data in SAMPLE_ASSESSMENTS:
     child = a_data['child']
     if Assessment.objects.filter(child=child, activity_type=a_data['activity_type']).exists():
-        print(f"   ⚠ Assessment for {child.name}/{a_data['activity_type']} exists, skipping.")
+        print(f"   [WARNING] Assessment for {child.name}/{a_data['activity_type']} exists, skipping.")
         continue
     Assessment.objects.create(
         child=child,
@@ -128,7 +128,7 @@ for a_data in SAMPLE_ASSESSMENTS:
         psychologist_note=a_data.get('psychologist_note', ''),
         reviewed_by=psych1 if a_data.get('status') in ('confirmed', 'corrected') else None,
     )
-    print(f"   ✅ Assessment: {child.name} – {a_data['activity_type']}")
+    print(f"   [OK] Assessment: {child.name} - {a_data['activity_type']}")
 
 notif_data = [
     (p1,     'Assessment Reviewed',       'Liam\'s Playing assessment has been confirmed. Score: 5.8/10.',    'review_complete'),
@@ -140,7 +140,7 @@ notif_data = [
 for recipient, title, message, ntype in notif_data:
     if not Notification.objects.filter(recipient=recipient, title=title).exists():
         Notification.objects.create(recipient=recipient, title=title, message=message, type=ntype)
-        print(f"   ✅ Notification → {recipient.name}: {title}")
+        print(f"   [OK] Notification -> {recipient.name}: {title}")
 
 today = date.today()
 sched_data = [
@@ -156,12 +156,12 @@ for title, atype, d, t, desc in sched_data:
             activity_type=atype, created_by=edu1,
             participant_ids=[child1.id, child2.id, child3.id],
         )
-        print(f"   ✅ Schedule: {title}")
+        print(f"   [OK] Schedule: {title}")
 
-print("\n✅  Seed complete!")
-print("─" * 50)
+print("\n[OK] Seed complete!")
+print("-" * 50)
 print("   Role           Email                              Password")
-print("─" * 50)
+print("-" * 50)
 for role, email in [
     ('Admin',        'demo.admin@autisense.app'),
     ('Parent',       'demo.parent@autisense.app'),
@@ -169,4 +169,4 @@ for role, email in [
     ('Educator',     'demo.educator@autisense.app'),
 ]:
     print(f"   {role:<14} {email:<36} demo1234")
-print("─" * 50)
+print("-" * 50)
