@@ -65,3 +65,23 @@ class CreateUserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'first_name', 'last_name', 'phone', 'avatar_url', 'name']
+        read_only_fields = ['avatar_url']
+
+    def update(self, instance, validated_data):
+        name = validated_data.pop('name', None)
+        if name is not None:
+            name_parts = name.split(' ', 1)
+            instance.first_name = name_parts[0]
+            instance.last_name = name_parts[1] if len(name_parts) > 1 else ''
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

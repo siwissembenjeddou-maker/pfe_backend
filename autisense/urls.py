@@ -13,4 +13,6 @@ urlpatterns = [
     path('schedules/',     include('apps.schedules.urls')),
     path('reports/',       include('apps.reports.urls')),
     path('users/',         include('apps.users.admin_urls')),
+    path('attendance/',    include('apps.attendance.urls')),
+    path('logs/',          include('apps.system_logs.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

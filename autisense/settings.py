@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     'apps.messaging',
     'apps.schedules',
     'apps.reports',
+    'apps.attendance',
+    'apps.system_logs',
 ]
 
 MIDDLEWARE = [

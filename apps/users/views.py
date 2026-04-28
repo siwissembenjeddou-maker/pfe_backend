@@ -4,7 +4,7 @@ from rest_framework import status, generics
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
-from .serializers import UserSerializer, LoginSerializer, CreateUserSerializer
+from .serializers import UserSerializer, LoginSerializer, CreateUserSerializer, ProfileUpdateSerializer
 
 
 class LoginView(APIView):
@@ -37,6 +37,15 @@ class LogoutView(APIView):
 class MeView(APIView):
     def get(self, request):
         return Response(UserSerializer(request.user, context={'request': request}).data)
+
+
+class ProfileUpdateView(APIView):
+    def patch(self, request):
+        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(UserSerializer(request.user, context={'request': request}).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserListCreateView(generics.ListCreateAPIView):

@@ -1,8 +1,11 @@
 from django.urls import path
-from .views import LoginView, LogoutView, MeView
+from rest_framework_simplejwt.views import TokenRefreshView
+from .views import LoginView, LogoutView, MeView, ProfileUpdateView
 
 urlpatterns = [
-    path('login',  LoginView.as_view(),  name='login'),
-    path('logout', LogoutView.as_view(), name='logout'),
-    path('me',     MeView.as_view(),     name='me'),
+    path('login',     LoginView.as_view(),      name='login'),
+    path('logout',    LogoutView.as_view(),     name='logout'),
+    path('me',        MeView.as_view(),         name='me'),
+    path('refresh',   TokenRefreshView.as_view(), name='token-refresh'),
+    path('me/update', ProfileUpdateView.as_view(), name='profile-update'),
 ]
