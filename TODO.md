@@ -1,41 +1,28 @@
-# Implementation Plan — COMPLETED ✅
+# AutiSense Full App Bug Fix & Run Guide
+## Status: In Progress
 
-## Phase 1 — Fix Critical Backend Bugs ✅
-- [x] Added `ProfileUpdateSerializer` to `apps/users/serializers.py`
-- [x] Added `ProfileUpdateView` to `apps/users/views.py`
+### Step 1: Fix Frontend Merge Conflicts ✅
+- [x] `pfe_frontend/lib/services/api_service.dart` - Fixed merge conflicts, duplicates
+- [x] `pfe_frontend/lib/screens/psychologist/psychologist_screen.dart` - Fixed massive _MessagesTab merge conflict
 
-## Phase 2 — Create Attendance Backend App ✅
-- [x] `apps/attendance/__init__.py`
-- [x] `apps/attendance/models.py`
-- [x] `apps/attendance/serializers.py`
-- [x] `apps/attendance/views.py`
-- [x] `apps/attendance/urls.py`
-- [x] `apps/attendance/migrations/0001_initial.py`
+### Step 2: Verify Dependencies & Models [TODO]
+- [ ] Check `pfe_frontend/lib/models/models.dart`
+- [ ] `pfe_frontend/pubspec.yaml`
 
-## Phase 3 — Create System Logs Backend App ✅
-- [x] `apps/system_logs/__init__.py`
-- [x] `apps/system_logs/models.py`
-- [x] `apps/system_logs/serializers.py`
-- [x] `apps/system_logs/views.py`
-- [x] `apps/system_logs/urls.py`
-- [x] `apps/system_logs/migrations/0001_initial.py`
+### Step 3: Backend Verification [TODO]
+- [ ] `python manage.py check`
+- [ ] `makemigrations && migrate`
+- [ ] `python seed.py`
 
-## Phase 4 — Register New Apps & URLs ✅
-- [x] Updated `autisense/settings.py` (INSTALLED_APPS)
-- [x] Updated `autisense/urls.py`
+### Step 4: Create Full Run Guide [TODO]
+- [ ] `FULL_RUN_GUIDE.md`
 
-## Phase 5 — Extend Frontend ApiService ✅
-- [x] Added missing methods to `api_service.dart`
+### Step 5: Test Compilation & Run [TODO]
+- Backend: `python manage.py runserver`
+- Frontend: `cd ../pfe_frontend && flutter clean && pub get && run`
 
-## Phase 6 — Wire Up Frontend Screens ✅
-- [x] Fixed `_MessagesTab` in `psychologist_screen.dart`
-- [x] Added child edit/delete in `parent_screen.dart`
-- [x] Connected View Report & Save Attendance in `educator_screen.dart`
-- [x] Connected System Logs in `admin_screen.dart`
-- [x] Connected recommendations in `solutions_screen.dart`
+### Step 6: Physical Phone Setup [TODO]
+- Enable USB debugging, `flutter devices`, `flutter run -d <id>`
 
-## Phase 7 — Verification ✅
-- [x] `python manage.py check` — no issues
-- [x] `python manage.py makemigrations` — created migrations
-- [x] `python manage.py migrate` — applied successfully
-- [x] `python manage.py runserver` — starts without errors
+
+
