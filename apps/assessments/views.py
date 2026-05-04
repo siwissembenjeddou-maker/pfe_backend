@@ -4,7 +4,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.permissions import IsAuthenticated
 
+from apps.core.permissions import IsPsychologist, IsParent
 from apps.children.models import Child
 from .models import Assessment
 from .serializers import AssessmentSerializer, ReviewSerializer
@@ -15,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class AnalyzeAudioView(APIView):
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated, IsParent]
 
     def post(self, request):
         child_id      = request.data.get('child_id')
@@ -129,14 +132,13 @@ class AssessmentDetailView(generics.RetrieveAPIView):
 
 
 class ReviewAssessmentView(APIView):
+    permission_classes = [IsAuthenticated, IsPsychologist]
+
     def patch(self, request, pk):
         try:
             assessment = Assessment.objects.get(pk=pk)
         except Assessment.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
-
-        if request.user.role not in ('psychologist', 'admin'):
-            return Response({'error': 'Forbidden'}, status=403)
 
         serializer = ReviewSerializer(data=request.data)
         if not serializer.is_valid():

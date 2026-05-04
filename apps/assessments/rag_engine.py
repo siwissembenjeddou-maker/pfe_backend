@@ -223,15 +223,18 @@ Scoring: 0-2.9=mild, 3-5.9=moderate, 6-10=severe. Severity must match score.
             }
 
 
-from faster_whisper import WhisperModel
-
-# Load once globally (important for performance)
-WHISPER_MODEL_INSTANCE = WhisperModel(
-    model_size_or_path="base",
-    compute_type="int8"   # best for Windows CPU
-)
-
 def transcribe_audio(audio_file_path: str) -> str:
+    # Lazy import to avoid ctranslate2/pkg_resources issue during Django startup
+    from faster_whisper import WhisperModel
+    
+    # Load once globally (important for performance)
+    global WHISPER_MODEL_INSTANCE
+    if 'WHISPER_MODEL_INSTANCE' not in globals():
+        WHISPER_MODEL_INSTANCE = WhisperModel(
+            model_size_or_path="base",
+            compute_type="int8"   # best for Windows CPU
+        )
+    
     logger.info(f"Transcribing: {audio_file_path}")
 
     segments, _ = WHISPER_MODEL_INSTANCE.transcribe(

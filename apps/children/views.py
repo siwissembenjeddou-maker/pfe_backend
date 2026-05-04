@@ -1,10 +1,13 @@
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from apps.core.permissions import IsParent
 from .models import Child
 from .serializers import ChildSerializer
 
 
 class ChildListCreateView(generics.ListCreateAPIView):
     serializer_class = ChildSerializer
+    permission_classes = [IsAuthenticated, IsParent]
 
     def get_queryset(self):
         user = self.request.user
