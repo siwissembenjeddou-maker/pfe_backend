@@ -58,7 +58,13 @@ class AnalyzeAudioView(APIView):
             assessment.immediate_recommendations = result.get('immediate_recommendations', [])
             assessment.save()
 
-            from apps.notifications.tasks import notify_psychologists
+            from apps.notifications.tasks import (
+                notify_parent_of_submission,
+                notify_psychologists,
+            )
+
+            # Notify parent as soon as an assessment is submitted (pending review).
+            notify_parent_of_submission.delay(assessment.id)
             notify_psychologists.delay(assessment.id)
 
             return Response({**AssessmentSerializer(assessment).data, **result})
@@ -102,7 +108,13 @@ class AnalyzeTextView(APIView):
                 key_observations=result.get('key_observations', []),
                 immediate_recommendations=result.get('immediate_recommendations', []),
             )
-            from apps.notifications.tasks import notify_psychologists
+            from apps.notifications.tasks import (
+                notify_parent_of_submission,
+                notify_psychologists,
+            )
+
+            # Notify parent as soon as an assessment is submitted (pending review).
+            notify_parent_of_submission.delay(assessment.id)
             notify_psychologists.delay(assessment.id)
             return Response({**AssessmentSerializer(assessment).data, **result})
 
@@ -115,7 +127,7 @@ class AssessmentListView(generics.ListAPIView):
     serializer_class = AssessmentSerializer
 
     def get_queryset(self):
-        qs   = Assessment.objects.select_related('child')
+        qs   = Assessment.objects.select_related('child', 'child__parent')
         user = self.request.user
         if user.role == 'parent':
             qs = qs.filter(child__parent=user)
@@ -126,9 +138,29 @@ class AssessmentListView(generics.ListAPIView):
         return qs
 
 
-class AssessmentDetailView(generics.RetrieveAPIView):
+class AssessmentDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset         = Assessment.objects.all()
     serializer_class = AssessmentSerializer
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            assessment = self.get_object()
+            user = request.user
+            if user.role not in ['admin', 'psychologist'] and assessment.child.parent != user:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("You do not have permission to delete this assessment.")
+            logger.info(f"Deleting assessment {assessment.id} for user {request.user.id}")
+            return super().delete(request, *args, **kwargs)
+        except Assessment.DoesNotExist as e:
+            pk = kwargs.get('pk', 'unknown')
+            logger.error(f"Assessment not found for pk={pk}, user={request.user.id}")
+            return Response(
+                {'error': f'Assessment not found (pk={pk})'},
+                status=404
+            )
+        except Exception as e:
+            logger.error(f"Delete failed: {str(e)}")
+            return Response({'error': str(e)}, status=500)
 
 
 class ReviewAssessmentView(APIView):
@@ -136,7 +168,7 @@ class ReviewAssessmentView(APIView):
 
     def patch(self, request, pk):
         try:
-            assessment = Assessment.objects.get(pk=pk)
+            assessment = Assessment.objects.select_related('child__parent').get(pk=pk)
         except Assessment.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
@@ -152,7 +184,23 @@ class ReviewAssessmentView(APIView):
         assessment.reviewed_at       = timezone.now()
         assessment.save()
 
-        from apps.notifications.tasks import notify_parent_of_review
-        notify_parent_of_review.delay(assessment.id)
+        # Send notification to parent synchronously (no Celery required)
+        try:
+            from apps.notifications.models import Notification
+            parent = assessment.child.parent
+            score   = assessment.corrected_score or assessment.autism_score
+            note_msg = f' Note: {assessment.psychologist_note}' if assessment.psychologist_note else ''
+            Notification.objects.create(
+                recipient=parent,
+                title='Assessment Review Complete',
+                message=(
+                    f'The assessment for {assessment.child.name} has been reviewed. '
+                    f'Final Score: {score:.1f}/10 ({assessment.severity_level}).{note_msg}'
+                ),
+                type='review_complete',
+            )
+            logger.info(f'Notification sent to parent {parent.id} for assessment {assessment.id}')
+        except Exception as e:
+            logger.warning(f'Failed to send parent notification: {e}')
 
         return Response(AssessmentSerializer(assessment).data)

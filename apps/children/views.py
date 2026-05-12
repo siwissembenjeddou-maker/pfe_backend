@@ -1,13 +1,14 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from apps.core.permissions import IsParent
 from .models import Child
 from .serializers import ChildSerializer
+from apps.notifications.tasks import notify_psychologists_child_added
 
 
 class ChildListCreateView(generics.ListCreateAPIView):
     serializer_class = ChildSerializer
-    permission_classes = [IsAuthenticated, IsParent]
+    # All authenticated roles (parent, psychologist, admin, educator) may manage children.
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -20,7 +21,13 @@ class ChildListCreateView(generics.ListCreateAPIView):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(parent=self.request.user)
+        user = self.request.user
+        if user.role not in ['parent', 'admin', 'psychologist']:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Your role cannot create child profiles.")
+        child = serializer.save(parent=user)
+        # Notify psychologists that a new child was added
+        notify_psychologists_child_added.delay(child.id)
 
 
 class ChildDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -31,3 +38,10 @@ class ChildDetailView(generics.RetrieveUpdateDestroyAPIView):
         if user.role == 'parent':
             return Child.objects.filter(parent=user)
         return Child.objects.all()
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if user.role not in ['admin', 'psychologist'] and instance.parent != user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to delete this child.")
+        instance.delete()

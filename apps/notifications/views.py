@@ -30,11 +30,38 @@ class SendNotificationView(APIView):
         title        = request.data.get('title', '')
         message      = request.data.get('message', '')
         ntype        = request.data.get('type', 'system')
+
+        # Support both integer pk and UUID string
         try:
             recipient = User.objects.get(pk=recipient_id)
-        except User.DoesNotExist:
+        except (User.DoesNotExist, ValueError):
             return Response({'error': 'Recipient not found'}, status=404)
 
-        n = Notification.objects.create(
-            recipient=recipient, title=title, message=message, type=ntype)
-        return Response(NotificationSerializer(n).data)
+        # Always notify the explicitly provided recipient
+        created_notifications = [
+            Notification.objects.create(
+                recipient=recipient,
+                title=title,
+                message=message,
+                type=ntype,
+            )
+        ]
+
+        # UX requirement: for psychologist reports, notify psychologists too.
+        # Frontend sends type='psychologist_report' from sendChildReport(...).
+        if ntype == 'psychologist_report':
+            psychologists = User.objects.filter(role='psychologist', is_active=True)
+            created_notifications.extend(
+                Notification.objects.bulk_create([
+                    Notification(
+                        recipient=psych,
+                        title=title,
+                        message=message,
+                        type=ntype,
+                    )
+                    for psych in psychologists
+                ])
+            )
+
+        # Serializer expects a single instance; return the first created notification payload.
+        return Response(NotificationSerializer(created_notifications[0]).data, status=201)

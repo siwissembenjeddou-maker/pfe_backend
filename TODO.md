@@ -1,4 +1,8 @@
-- [ ] Plan: identify JSON decode sites in Flutter client and update dynamic list decoding to Map<String, dynamic> then extract children/results.
-- [ ] Implement: update pfe_frontend/lib/services/api_service.dart for the found jsonDecode(response.body) / jsonDecode(res.body) patterns.
-- [ ] Run flutter analyze/tests (if available) to ensure no type errors.
+# TODO
+
+## Parent screen fix
+- [ ] Revert `pfe_frontend/lib/screens/parent/parent_screen.dart` to a syntactically valid base (pre-broken state).
+- [ ] Re-apply the intended refactor: use shared `DashboardTab` and `AssessmentTab` widgets instead of inline duplicates.
+- [ ] Run `flutter analyze` in `pfe_frontend/` and fix any remaining compile errors.
+- [ ] Verify navigation indices for Home/Assess/Results/Solutions/Alerts.
 

@@ -3,12 +3,15 @@ from .models import Assessment
 
 
 class AssessmentSerializer(serializers.ModelSerializer):
-    child_name = serializers.CharField(source='child.name', read_only=True)
+    child_name   = serializers.CharField(source='child.name', read_only=True)
+    parent_id    = serializers.CharField(source='child.parent_id', read_only=True)
+    parent_name  = serializers.CharField(source='child.parent.name', read_only=True)
 
     class Meta:
         model  = Assessment
         fields = [
-            'id', 'child', 'child_name', 'activity_type',
+            'id', 'child', 'child_name', 'parent_id', 'parent_name',
+            'activity_type',
             'audio_transcription', 'autism_score', 'severity_level',
             'dimension_scores', 'ai_analysis', 'key_observations',
             'immediate_recommendations', 'status', 'psychologist_note',

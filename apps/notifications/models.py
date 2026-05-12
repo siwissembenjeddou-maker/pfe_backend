@@ -4,11 +4,13 @@ from apps.users.models import User
 
 class Notification(models.Model):
     TYPE_CHOICES = [
-        ('assessment_result', 'Assessment Result'),
-        ('review_complete',   'Review Complete'),
-        ('message',           'Message'),
-        ('reminder',          'Reminder'),
-        ('system',            'System'),
+        ('assessment_result',  'Assessment Result'),
+        ('review_complete',     'Review Complete'),
+        ('message',            'Message'),
+        ('reminder',           'Reminder'),
+        ('psychologist_report','Psychologist Report'),
+        ('child_added',        'Child Added'),
+        ('system',             'System'),
     ]
 
     recipient  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')

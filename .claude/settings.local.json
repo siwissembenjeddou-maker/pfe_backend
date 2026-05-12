@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze lib/services/api_service.dart)",
+      "Bash(flutter analyze lib/screens/psychologist/psychologist_screen.dart)",
+      "Bash(flutter analyze lib/services/api_service.dart lib/screens/psychologist/psychologist_screen.dart)"
+    ]
+  }
+}

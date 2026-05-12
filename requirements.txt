@@ -22,3 +22,4 @@ numpy==1.26.4
 scikit-learn==1.4.2
 pydub==0.25.1
 ffmpeg-python==0.2.0
+httpx==0.24.1

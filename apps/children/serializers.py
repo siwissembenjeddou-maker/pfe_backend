@@ -5,6 +5,7 @@ from .models import Child
 class ChildSerializer(serializers.ModelSerializer):
     age           = serializers.ReadOnlyField()
     parent_id     = serializers.PrimaryKeyRelatedField(source='parent', read_only=True)
+    parent_name   = serializers.CharField(source='parent.name', read_only=True)
     profile_image = serializers.SerializerMethodField()
     assessments   = serializers.SerializerMethodField()
 
@@ -12,7 +13,7 @@ class ChildSerializer(serializers.ModelSerializer):
         model  = Child
         fields = [
             'id', 'name', 'date_of_birth', 'age', 'gender',
-            'parent_id', 'profile_image', 'notes', 'assessments', 'created_at',
+            'parent_id', 'parent_name', 'profile_image', 'notes', 'assessments', 'created_at',
         ]
 
     def get_profile_image(self, obj):

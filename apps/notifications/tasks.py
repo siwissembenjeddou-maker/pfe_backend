@@ -35,6 +35,33 @@ def notify_psychologists(assessment_id: int):
 
 
 @shared_task
+def notify_parent_of_submission(assessment_id: int):
+    from apps.assessments.models import Assessment
+    from .models import Notification
+
+    try:
+        assessment = Assessment.objects.select_related('child__parent').get(pk=assessment_id)
+        parent     = assessment.child.parent
+
+        Notification.objects.create(
+            recipient=parent,
+            title='New Assessment Pending Review',
+            message=(
+                f'A new assessment for {assessment.child.name} '
+                f'({assessment.activity_type}) has been submitted. '
+                f'AI Score: {assessment.autism_score:.1f}/10 '
+                f'({assessment.severity_level}). Please review.'
+            ),
+            type='assessment_result',
+        )
+        logger.info(
+            f'Notified parent {parent.id} of submission for assessment {assessment_id}'
+        )
+    except Exception as e:
+        logger.error(f'notify_parent_of_submission failed: {e}')
+
+
+@shared_task
 def notify_parent_of_review(assessment_id: int):
     from apps.assessments.models import Assessment
     from .models import Notification
@@ -57,3 +84,33 @@ def notify_parent_of_review(assessment_id: int):
         logger.info(f'Notified parent {parent.id} of review for assessment {assessment_id}')
     except Exception as e:
         logger.error(f'notify_parent_of_review failed: {e}')
+
+
+@shared_task
+def notify_psychologists_child_added(child_id: int):
+    from apps.children.models import Child
+    from apps.users.models import User
+    from .models import Notification
+
+    try:
+        child = Child.objects.select_related('parent').get(pk=child_id)
+        psychologists = User.objects.filter(role='psychologist', is_active=True)
+
+        notifications = [
+            Notification(
+                recipient=psych,
+                title='New Child Added',
+                message=(
+                    f'A new child profile was added: {child.name}. '
+                    f'Parent: {child.parent.name if child.parent else "Unknown"}'
+                ),
+                type='child_added',
+            )
+            for psych in psychologists
+        ]
+        Notification.objects.bulk_create(notifications)
+        logger.info(
+            f'Notified {len(notifications)} psychologists of new child {child_id}'
+        )
+    except Exception as e:
+        logger.error(f'notify_psychologists_child_added failed: {e}')
