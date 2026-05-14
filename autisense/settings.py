@@ -14,7 +14,9 @@ if ENVIRONMENT == 'production' and SECRET_KEY == 'dev-secret-key-change-in-produ
     raise ValueError("SECRET_KEY must be set in production.")
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True' if ENVIRONMENT == 'production' else os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',')
+# Allow LAN/IP access for physical devices
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2,10.162.205.160,192.168.100.124,*').split(',')
+
 
 if ENVIRONMENT == 'production':
     SECURE_SSL_REDIRECT = True
