@@ -889,16 +889,23 @@ AUTISM_KNOWLEDGE_BASE = [
 ]
 
 
+import threading
+
+
 class RAGEngine:
     _instance    = None
     _collection  = None
     _embed_model = None
+    _lock        = threading.Lock()
 
     @classmethod
     def get_instance(cls):
         if cls._instance is None:
-            cls._instance = cls()
-            cls._instance._initialize()
+            with cls._lock:
+                if cls._instance is None:
+                    instance = cls()
+                    instance._initialize()
+                    cls._instance = instance
         return cls._instance
 
     def _initialize(self):

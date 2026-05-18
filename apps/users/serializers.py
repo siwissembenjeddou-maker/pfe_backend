@@ -30,14 +30,15 @@ class UserSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     email    = serializers.EmailField()
     password = serializers.CharField()
-    role     = serializers.ChoiceField(choices=['admin', 'parent', 'psychologist', 'educator'])
+    role     = serializers.ChoiceField(choices=['admin', 'parent', 'psychologist', 'educator'], required=False, allow_null=True)
 
     def validate(self, data):
         user = authenticate(username=data['email'], password=data['password'])
         if not user:
             raise serializers.ValidationError('Invalid credentials')
-        if user.role != data['role']:
-            raise serializers.ValidationError(f'This account is not a {data["role"]}')
+        requested_role = data.get('role')
+        if requested_role and user.role != requested_role:
+            raise serializers.ValidationError(f'This account is not a {requested_role}')
         if not user.is_active:
             raise serializers.ValidationError('Account is disabled')
         data['user'] = user
