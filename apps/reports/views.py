@@ -35,6 +35,10 @@ class ChildReportView(APIView):
             severity_breakdown[a.severity_level] = severity_breakdown.get(a.severity_level, 0) + 1
 
         latest = assessments.last()
+        from apps.assessments.rag_engine import RAGEngine
+        engine = RAGEngine.get_instance()
+        ai_report = engine.generate_child_report(child, list(assessments))
+
         return Response({
             'child_id':          child.id,
             'child_name':        child.name,
@@ -46,6 +50,7 @@ class ChildReportView(APIView):
             'severity_breakdown':severity_breakdown,
             'average_score':     sum(a.effective_score for a in assessments) / assessments.count(),
             'dimension_averages':_avg_dimensions(assessments),
+            'ai_report':         ai_report,
         })
 
 

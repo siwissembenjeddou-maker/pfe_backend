@@ -31,6 +31,23 @@ class SendNotificationView(APIView):
         message      = request.data.get('message', '')
         ntype        = request.data.get('type', 'system')
 
+        # Broadcast announcement support
+        if recipient_id == 'all' or recipient_id == 'broadcast' or ntype == 'announcement':
+            active_users = User.objects.filter(is_active=True)
+            if not active_users.exists():
+                return Response({'error': 'No active users found'}, status=404)
+
+            created_notifications = Notification.objects.bulk_create([
+                Notification(
+                    recipient=user,
+                    title=title,
+                    message=message,
+                    type=ntype,
+                )
+                for user in active_users
+            ])
+            return Response(NotificationSerializer(created_notifications[0]).data, status=201)
+
         # Support both integer pk and UUID string
         try:
             recipient = User.objects.get(pk=recipient_id)
@@ -50,6 +67,19 @@ class SendNotificationView(APIView):
         # UX requirement: for psychologist reports, notify psychologists too.
         # Frontend sends type='psychologist_report' from sendChildReport(...).
         if ntype == 'psychologist_report':
+            # Add to the RAG database so the engine learns from psychologist's verified/edited reports
+            try:
+                import logging
+                logger = logging.getLogger(__name__)
+                from apps.assessments.rag_engine import RAGEngine
+                engine = RAGEngine.get_instance()
+                engine.add_custom_data([message])
+                logger.info("Successfully added psychologist report to RAG database.")
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to add report to RAG database: {e}")
+
             psychologists = User.objects.filter(role='psychologist', is_active=True)
             created_notifications.extend(
                 Notification.objects.bulk_create([
@@ -65,3 +95,4 @@ class SendNotificationView(APIView):
 
         # Serializer expects a single instance; return the first created notification payload.
         return Response(NotificationSerializer(created_notifications[0]).data, status=201)
+

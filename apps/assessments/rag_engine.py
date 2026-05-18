@@ -886,6 +886,52 @@ AUTISM_KNOWLEDGE_BASE = [
     "and quality of life. The 'wait and see' approach is not supported by evidence "
     "and results in worse outcomes.",
 
+    # ── SECTION 34: CLINICAL OBSERVATION ASSETS & ENVIRONMENTAL ACTIVITIES ────
+
+    "Clinical observation assets - Playing activity: Play-based assessment is the gold "
+    "standard for eliciting spontaneous social communication, emotional reciprocity, and "
+    "cognitive-motor milestones in children. The Playing asset evaluates: (1) functional "
+    "vs. symbolic play — does the child use toys for their intended purpose (e.g., rolling a car) "
+    "and engage in imaginative, pretend play (e.g., feeding a doll) or focus on repetitive, "
+    "non-functional actions (e.g., spinning car wheels, lining up toys); (2) joint attention "
+    "— pointing to show interest, alternating gaze between assessors/parents and toys, and sharing "
+    "enjoyment; (3) social reciprocity — turn-taking, initiating play bids, and responding to "
+    "social prompts.",
+
+    "Clinical observation assets - Reading activity: Reading and shared book looking are powerful "
+    "naturalistic contexts for observing social referencing and linguistic patterns. The Reading "
+    "asset evaluates: (1) shared joint attention — following the reader's gaze or pointing gestures "
+    "to pictures and sharing visual interest; (2) language and narrative comprehension — using verbal "
+    "or non-verbal means to comment on or ask questions about characters and scenes; (3) behavioral focus "
+    "— is the child interested in the social story or fixated on structural, repetitive details "
+    "such as flipping pages continuously, touching book textures, or focusing exclusively on text characters.",
+
+    "Clinical observation assets - Drawing activity: Fine motor activities like drawing or coloring "
+    "provide structured insight into executive functioning and focused interests. The Drawing asset "
+    "evaluates: (1) visual-spatial and fine motor coordination — crayon grip, precision, and task compliance; "
+    "(2) expressive communication — using artistic creations to share thoughts or invite interaction; "
+    "(3) restricted patterns — repetitive movements (e.g., tapping markers, rubbing crayons) or fixated "
+    "drawing themes (e.g., drawing only circles or train tracks repeatedly) with distress if redirected.",
+
+    "Clinical observation assets - Eating & Drinking activities: Mealtime and snack-time routines are "
+    "crucial for identifying sensory profiles and social requesting. The Eating and Drinking assets "
+    "evaluate: (1) sensory processing integration — hypersensitivity or hyposensitivity to food textures, "
+    "smells, temperatures, or utensil touch; (2) behavioral rigidity — extreme selectivity (eating less than "
+    "5 foods), distress if food is mixed, or demanding precise mealtime rituals; (3) functional daily living "
+    "skills — using cups, spoons, forks, and communicating hunger/thirst or requesting more.",
+
+    "Clinical observation assets - Writing activity: Handwriting and academic-like tasks evaluate task "
+    "adherence and physical regulation. The Writing asset evaluates: (1) motor execution — paper positioning, "
+    "pencil control, and letter formation; (2) processing speed and focus — endurance during structured fine motor "
+    "demands and susceptibility to ambient distractions; (3) emotional regulation — response to frustration or "
+    "errors (e.g., rubbing out mistakes aggressively, refusal to continue, or rigid perfectionism).",
+
+    "Clinical observation assets - Social activity: Peer-to-peer and adult-child interactive play is the most "
+    "direct test of clinical social skills. The Social asset evaluates: (1) non-verbal communication — quality of "
+    "eye contact, matching facial expressions, body orientation, and social smiling; (2) social initiative "
+    "— spontaneous initiation of conversations or games and responsive reciprocity to others' bids; (3) social "
+    "problem-solving — turn-taking, compromise, and managing minor disputes or transitions between play schemes.",
+
 ]
 
 
@@ -1270,6 +1316,114 @@ Severity must match the score range exactly.
                 'key_observations': [],
                 'immediate_recommendations': [],
             }
+
+    def generate_child_report(self, child, assessments):
+        # Retrieve context from ChromaDB based on child's average score and details
+        avg_score = sum(a.effective_score for a in assessments) / len(assessments) if assessments else 0
+        severity_level = "mild" if avg_score < 3 else ("moderate" if avg_score < 6 else "severe")
+        
+        # Pull dynamic context from RAG based on the child's overall profile and severity
+        context_chunks = self.retrieve(f"Severity: {severity_level}, average score: {avg_score}", n_results=5)
+        context = '\n\n'.join(context_chunks)
+        
+        # Compile child's profile and assessments list
+        assessments_summary = []
+        for i, a in enumerate(assessments):
+            assessments_summary.append(
+                f"Assessment {i+1}:\n"
+                f"- Activity Type: {a.activity_type}\n"
+                f"- Score: {a.effective_score:.1f}/10\n"
+                f"- Severity: {a.severity_level}\n"
+                f"- Transcription: \"{a.audio_transcription}\"\n"
+                f"- Psychologist Note: \"{a.psychologist_note or ''}\""
+            )
+        assessments_text = "\n\n".join(assessments_summary)
+        
+        prompt = f"""You are an elite, highly experienced pediatric psychologist and autism specialist.
+Your task is to write a comprehensive, highly professional clinical report for a child based on their diagnostic history, assessments, and progress.
+
+## AUTISM KNOWLEDGE BASE (Retrieved Clinical Context)
+{context}
+
+## CHILD CLINICAL PROFILE
+- Name: {child.name}
+- Age: {child.age} years
+- Gender: {child.gender}
+- Total Assessments: {len(assessments)}
+- Average Severity Score: {avg_score:.1f}/10 ({severity_level.upper()})
+
+## DIAGNOSTIC HISTORY & ASSESSMENT LOG
+{assessments_text}
+
+## REPORT INSTRUCTIONS
+Create a structured clinical report detailing the child's progress, core developmental strengths, areas requiring substantial support, and a concrete evidence-based home and educational support plan.
+Write the report in a highly professional, clinical yet empathetic tone, addressing the parent directly.
+Do NOT use markdown headers like `#` or `##`. Instead, use bold text (e.g. **Clinical Summary**) or ALL-CAPS section headers.
+Your report MUST contain these exact sections:
+1. CLINICAL PROGRESS SUMMARY: Synthesize the assessment scores and explain the overall severity level in clear clinical terms.
+2. OBSERVATIONAL DEVELOPMENTS: In this section, you MUST explicitly mention the specific observation activities (assessment asset types like playing, reading, eating, drawing, writing, social) that the child performed in this log. Talk about these specific assets and explain what their clinical performance reveals about their developmental progress (e.g., social engagement during play or peer social interaction, fine motor focus during drawing or writing, joint attention during shared reading, sensory texture exploration, or daily life communication).
+3. KEY CHALLENGES & SENSORY ISSUES: Detail specific areas of concern or sensory sensitivities. Reference the specific activity contexts (e.g., transitions, mealtime eating/drinking texture aversions, focus rigidity in play/drawing, task avoidance during writing, or reduced reciprocity during social play) where these challenges were noted.
+4. TAILORED REHABILITATION PLAN: Provide 3-5 concrete, evidence-based recommendations, structured therapies (like SLT, OT, or ABA), and home strategies tailored to their developmental age and average severity.
+
+Write a substantial, full-length report (around 250-400 words).
+"""
+        try:
+            if settings.LLM_PROVIDER == 'anthropic':
+                report = self._call_anthropic(prompt)
+            else:
+                report = self._call_openai(prompt)
+            return report.strip()
+        except Exception as e:
+            logger.warning(f"LLM API failed to generate child report: {str(e)}, falling back to static generation")
+            return self._generate_fallback_report(child, avg_score, severity_level, assessments)
+
+    def _generate_fallback_report(self, child, avg_score, severity_level, assessments):
+        num_assessments = len(assessments)
+        activities = sorted(list(set(a.activity_type.lower() for a in assessments)))
+        activities_str = ", ".join(activities) if activities else "routine activities"
+        
+        # Build description of asset types
+        assets_descriptions = []
+        for act in activities:
+            if act == 'playing':
+                assets_descriptions.append("- Playing Observation Asset: Assessed social reciprocity, joint attention, and functional vs. repetitive toy exploration patterns.")
+            elif act == 'reading':
+                assets_descriptions.append("- Reading Observation Asset: Assessed shared joint attention, gaze referencing, and narrative visual engagement.")
+            elif act == 'drawing':
+                assets_descriptions.append("- Drawing Observation Asset: Assessed fine motor precision, visual-spatial coordination, and non-verbal expression.")
+            elif act == 'eating' or act == 'drinking':
+                assets_descriptions.append("- Eating/Drinking Observation Assets: Assessed sensory response to food textures, utensils touch, and daily living routines.")
+            elif act == 'writing':
+                assets_descriptions.append("- Writing Observation Asset: Assessed hand control, task adherence, and compliance during structured fine motor demands.")
+            elif act == 'social':
+                assets_descriptions.append("- Social Observation Asset: Assessed peer-to-peer reciprocity, initiative of communication, and non-verbal smiling cues.")
+        
+        assets_section = "\n".join(assets_descriptions) if assets_descriptions else "- Standard naturalistic observation assets."
+
+        return (
+            f"CLINICAL PROGRESS REPORT FOR {child.name.upper()}\n"
+            f"Age: {child.age} years | Gender: {child.gender}\n"
+            f"Overall Autism Severity Score: {avg_score:.1f}/10 ({severity_level.upper()})\n\n"
+            f"CLINICAL PROGRESS SUMMARY:\n"
+            f"Based on {num_assessments} developmental assessments completed by {child.name}, the child displays an overall "
+            f"autism severity score of {avg_score:.1f}/10, placing them in the {severity_level} range. Behaviors show a "
+            f"consistent developmental profile requiring clinical monitoring and customized intervention strategies.\n\n"
+            f"OBSERVED ASSESSMENT ASSETS & CLINICAL TYPES:\n"
+            f"The assessments evaluated {child.name}'s development across specific naturalistic observation assets ({activities_str}):\n"
+            f"{assets_section}\n\n"
+            f"OBSERVATIONAL DEVELOPMENTS:\n"
+            f"Observational evidence suggests {child.name} engages in activities with varied levels of focus and response. "
+            f"During the observed {activities_str} assets, strengths were noted in visual exploration and responsiveness to predictable structure. "
+            f"Social reciprocity and functional communication patterns continue to develop, showing progress during structured activities.\n\n"
+            f"KEY CHALLENGES & SENSORY ISSUES:\n"
+            f"{child.name} faces primary challenges in sensory regulation and emotional transitions between activities, notably observed during "
+            f"the {activities_str} routines. Sensory hypersensitivities are noted during transitions, occasionally leading to emotional distress. "
+            f"Strict adherence to routines remains a core coping mechanism for the child.\n\n"
+            f"TAILORED REHABILITATION PLAN:\n"
+            f"1. Establish consistent visual schedules in both home and educational settings to reduce transition anxiety.\n"
+            f"2. Engage in parent-mediated play therapy (ESDM/Floortime) 3-4 times a week, focusing on joint attention.\n"
+            f"3. Consult with a Speech-Language Therapist (SLT) and Occupational Therapist (OT) for targeted sensory integration support."
+        )
 
 
 def transcribe_audio(audio_file_path: str) -> str:

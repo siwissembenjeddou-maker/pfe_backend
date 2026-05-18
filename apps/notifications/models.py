@@ -11,6 +11,7 @@ class Notification(models.Model):
         ('psychologist_report','Psychologist Report'),
         ('child_added',        'Child Added'),
         ('system',             'System'),
+        ('announcement',       'Announcement'),
     ]
 
     recipient  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
