@@ -176,3 +176,30 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
+
+# ── Email (Gmail SMTP) ──────────────────────────────────────────────────────
+_EMAIL_USER = os.getenv('EMAIL_HOST_USER', '')
+_EMAIL_PASS = os.getenv('EMAIL_HOST_PASSWORD', '')
+
+# Auto-detect whether real credentials are configured.
+# If not (empty or still placeholder), fall back to console backend so
+# OTP codes are printed to the Django server terminal during development.
+_PLACEHOLDER_VALUES = {'', 'your-gmail@gmail.com', 'your-gmail-app-password'}
+_HAS_REAL_CREDENTIALS = (
+    _EMAIL_USER not in _PLACEHOLDER_VALUES
+    and _EMAIL_PASS not in _PLACEHOLDER_VALUES
+)
+
+if _HAS_REAL_CREDENTIALS:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    print("[WARNING] EMAIL: Using console backend (emails will print here). "
+          "Set EMAIL_HOST_USER & EMAIL_HOST_PASSWORD in .env for real SMTP.")
+
+EMAIL_HOST            = 'smtp.gmail.com'
+EMAIL_PORT            = 587
+EMAIL_USE_TLS         = True
+EMAIL_HOST_USER       = _EMAIL_USER
+EMAIL_HOST_PASSWORD   = _EMAIL_PASS
+DEFAULT_FROM_EMAIL    = _EMAIL_USER or 'noreply@autisense.app'

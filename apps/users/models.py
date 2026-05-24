@@ -1,5 +1,9 @@
+import random
+import string
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 
 
 class User(AbstractUser):
@@ -27,3 +31,31 @@ class User(AbstractUser):
     @property
     def name(self):
         return self.get_full_name() or self.username
+
+
+class PasswordResetCode(models.Model):
+    """One-time 6-digit OTP code for password reset via email."""
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reset_codes')
+    code       = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used       = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.expires_at = timezone.now() + timedelta(minutes=10)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_valid(self):
+        return not self.used and timezone.now() < self.expires_at
+
+    @classmethod
+    def generate_code(cls):
+        return ''.join(random.choices(string.digits, k=6))
+
+    def __str__(self):
+        return f'{self.user.email} – {self.code} (used={self.used})'

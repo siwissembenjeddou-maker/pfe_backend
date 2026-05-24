@@ -73,7 +73,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
-        model = User
+        model  = User
         fields = ['email', 'first_name', 'last_name', 'phone', 'avatar_url', 'name']
         read_only_fields = ['avatar_url']
 
@@ -87,3 +87,18 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class VerifyResetCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code  = serializers.CharField(min_length=6, max_length=6)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email        = serializers.EmailField()
+    code         = serializers.CharField(min_length=6, max_length=6)
+    new_password = serializers.CharField(min_length=6, write_only=True)
