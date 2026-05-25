@@ -85,6 +85,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             instance.last_name = name_parts[1] if len(name_parts) > 1 else ''
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        if 'email' in validated_data:
+            instance.username = validated_data['email']
         instance.save()
         return instance
 

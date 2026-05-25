@@ -1,3 +1,0 @@
-- [ ] Update `apps/users/views.py` to ensure user deletion is a true hard delete by explicitly calling `instance.delete()` during the destroy flow (avoid relying on DRF generic `perform_destroy`).
-- [ ] Add a quick verification after delete by ensuring the user row no longer exists (assert via query before responding).
-- [ ] (Optional) Run tests / start server and verify: delete user -> register again with same email should succeed.
