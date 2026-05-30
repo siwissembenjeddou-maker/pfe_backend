@@ -30,6 +30,8 @@ class SendNotificationView(APIView):
         title        = request.data.get('title', '')
         message      = request.data.get('message', '')
         ntype        = request.data.get('type', 'system')
+        child_id     = request.data.get('child_id')
+
 
         # Broadcast announcement support
         if recipient_id == 'all' or recipient_id == 'broadcast' or ntype == 'announcement':
@@ -67,6 +69,20 @@ class SendNotificationView(APIView):
         # UX requirement: for psychologist reports, notify psychologists too.
         # Frontend sends type='psychologist_report' from sendChildReport(...).
         if ntype == 'psychologist_report':
+            # Persist under child profile so the psychologist can load it later from the report tab.
+            if child_id is not None:
+                try:
+                    from apps.reports.models import PsychologistReport
+                    from apps.children.models import Child
+                    PsychologistReport.objects.create(
+                        child=Child.objects.get(pk=child_id),
+                        created_by=request.user if request.user.is_authenticated else None,
+                        content=message,
+                    )
+                except Exception:
+                    # Don't block sending notifications if persistence fails.
+                    pass
+
             # Add to the RAG database so the engine learns from psychologist's verified/edited reports
             try:
                 import logging
@@ -92,6 +108,7 @@ class SendNotificationView(APIView):
                     for psych in psychologists
                 ])
             )
+
 
         # Serializer expects a single instance; return the first created notification payload.
         return Response(NotificationSerializer(created_notifications[0]).data, status=201)

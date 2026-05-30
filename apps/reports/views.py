@@ -18,6 +18,7 @@ class ChildReportView(APIView):
                 'child_id': child.id, 'child_name': child.name,
                 'total_assessments': 0, 'trend': [],
                 'current_score': None, 'severity_breakdown': {},
+                'psychologist_report': None,
             })
 
         trend = [
@@ -35,6 +36,18 @@ class ChildReportView(APIView):
             severity_breakdown[a.severity_level] = severity_breakdown.get(a.severity_level, 0) + 1
 
         latest = assessments.last()
+
+        # Load latest stored psychologist report (if any)
+        psychologist_report = None
+        try:
+            from apps.reports.models import PsychologistReport
+            psychologist_report_obj = (
+                PsychologistReport.objects.filter(child=child).select_related('created_by').first()
+            )
+            psychologist_report = psychologist_report_obj.content if psychologist_report_obj else None
+        except Exception:
+            psychologist_report = None
+
         from apps.assessments.rag_engine import RAGEngine
         engine = RAGEngine.get_instance()
         ai_report = engine.generate_child_report(child, list(assessments))
@@ -51,6 +64,7 @@ class ChildReportView(APIView):
             'average_score':     sum(a.effective_score for a in assessments) / assessments.count(),
             'dimension_averages':_avg_dimensions(assessments),
             'ai_report':         ai_report,
+            'psychologist_report': psychologist_report,
         })
 
 
