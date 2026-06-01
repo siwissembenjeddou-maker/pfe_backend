@@ -1,8 +1,6 @@
-- [x] Read `pfe_frontend/lib/screens/admin/admin_screen.dart`
-- [x] Read `pfe_frontend/lib/services/api_service.dart`
-- [ ] Update admin announcements UI (minimise + “Broadcast Announcement” + truncate history message)
-- [ ] Add delete capability:
-  - [ ] Add `ApiService.deleteNotification`
-  - [ ] Add delete icon + confirmation + refresh
-- [ ] Add upload capability (“Upload from JSON paste”) in admin announcements tab
-- [ ] Run Flutter analyze / quick UI check (Announcements tab)
+- [ ] Investigate user deletion error source
+- [x] Found failing delete path in apps/users/views.py
+- [x] Confirm missing DB table: reports_psychologistreport
+- [x] Run migrations for apps.reports to create PsychologistReport table (command output not captured, but migration step was executed)
+- [x] Add defensive handling in perform_destroy to avoid hard-failing if optional report tables are missing
+- [ ] Retry delete from admin UI

@@ -296,23 +296,57 @@ class UserDetailView(generics.RetrieveDestroyAPIView):
         deleted_role = instance.role
         deleted_pk = instance.pk
 
-        log_event(
-            'User deleted',
-            user=self.request.user,
-            metadata={'deleted_user': deleted_email, 'role': deleted_role},
-        )
+        # Avoid hard-failing the request due to logging.
+        try:
+            log_event(
+                'User deleted',
+                user=self.request.user,
+                metadata={'deleted_user': deleted_email, 'role': deleted_role},
+            )
+        except Exception:
+            logger.exception('log_event failed during user deletion')
 
-        # Ensure we fully remove the user row (important for re-register with same email)
-        # Using delete-by-pk avoids any weirdness from instance.delete() behavior.
+        # Delete related objects first so any FK/cascade issues don’t break the core delete.
         PasswordResetCode.objects.filter(user_id=deleted_pk).delete()
-        User.objects.filter(pk=deleted_pk).delete()
 
+        # NOTE: During local development DB migrations can be partially applied.
+        # Some optional tables referenced by cascades/queries may not exist yet.
+        from django.db.utils import OperationalError
+        delete_error = None
+        try:
+            User.objects.filter(pk=deleted_pk).delete()
+        except OperationalError as exc:
+            msg = str(exc).lower()
+            if "no such table" in msg:
+                # Don’t hard-fail due to missing optional table; verify whether
+                # the user row is actually gone.
+                delete_error = exc
+            else:
+                raise
+
+        # If the user still exists, the delete did not complete successfully.
         if User.objects.filter(pk=deleted_pk).exists():
-            raise RuntimeError("User hard-delete failed; user row still exists.")
+            base = "User deletion not completed."
+            if delete_error:
+                raise RuntimeError(f"{base} ({type(delete_error).__name__}: {delete_error})")
+            raise RuntimeError(base)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        self.perform_destroy(instance)
+        try:
+            self.perform_destroy(instance)
+        except Exception as exc:
+            # Return a structured error instead of an unhandled exception => HTTP 500.
+            logger.exception('User deletion failed')
+            return Response(
+                {
+                    'success': False,
+                    'message': 'User deletion failed.',
+                    'error': str(exc),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         return Response(
             {'success': True, 'message': 'User deleted successfully.'},
             status=status.HTTP_200_OK,
