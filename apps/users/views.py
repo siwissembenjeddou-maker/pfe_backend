@@ -302,7 +302,10 @@ class UserDetailView(generics.RetrieveDestroyAPIView):
             metadata={'deleted_user': deleted_email, 'role': deleted_role},
         )
 
-        instance.delete()
+        # Ensure we fully remove the user row (important for re-register with same email)
+        # Using delete-by-pk avoids any weirdness from instance.delete() behavior.
+        PasswordResetCode.objects.filter(user_id=deleted_pk).delete()
+        User.objects.filter(pk=deleted_pk).delete()
 
         if User.objects.filter(pk=deleted_pk).exists():
             raise RuntimeError("User hard-delete failed; user row still exists.")

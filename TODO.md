@@ -1,17 +1,8 @@
-# TODO - Persist psychologist reports under child profile
-
-## Plan steps
-
-1. Create persistent `PsychologistReport` model under `apps/reports/` linked to `Child`.
-2. Update `apps/notifications/views.py` to save incoming `type='psychologist_report'` messages into `PsychologistReport` for the given `child_id`.
-3. Update `apps/reports/views.py` to return the latest stored `psychologist_report` content to authorized psychologists/parents.
-4. Update Flutter psychologist report tab to display stored persisted report (latest) for the selected child.
-5. Create and run Django migrations.
-6. Sanity test: send report → reload report tab → persisted text shows.
-
-## Progress
-
-- [x] Create TODO tracker
-- [x] Create PsychologistReport model
-- [x] Persist psychologist_report messages to PsychologistReport
-- [x] Return latest psychologist_report in GET child report
+- [x] Read `pfe_frontend/lib/screens/admin/admin_screen.dart`
+- [x] Read `pfe_frontend/lib/services/api_service.dart`
+- [ ] Update admin announcements UI (minimise + “Broadcast Announcement” + truncate history message)
+- [ ] Add delete capability:
+  - [ ] Add `ApiService.deleteNotification`
+  - [ ] Add delete icon + confirmation + refresh
+- [ ] Add upload capability (“Upload from JSON paste”) in admin announcements tab
+- [ ] Run Flutter analyze / quick UI check (Announcements tab)
